@@ -78,6 +78,17 @@ function BookingPage() {
       setSubmitError('Не удалось отправить заявку. Проверьте интернет и попробуйте ещё раз.')
       return
     }
+    try {
+      const notificationUrl = import.meta.env.VITE_NOTIFICATION_URL || 'http://127.0.0.1:8787/notify'
+      const notificationResponse = await fetch(notificationUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      if (!notificationResponse.ok) console.warn('Заявка сохранена, но уведомление не отправлено')
+    } catch {
+      console.warn('Заявка сохранена, но сервис уведомлений недоступен')
+    }
     setBooking(payload)
   }
 

@@ -1,7 +1,8 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+const config = window.__APP_CONFIG__ || {}
+const supabaseUrl = config.supabaseUrl
+const supabaseAnonKey = config.supabaseAnonKey
 
 if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Не настроены ключи Supabase в .env')

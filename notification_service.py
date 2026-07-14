@@ -1,20 +1,24 @@
 import json
+import mimetypes
 import os
 import re
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
+from urllib.parse import unquote, urlparse
 
 import requests
 
 
-HOST = "127.0.0.1"
-PORT = int(os.getenv("NOTIFICATION_PORT", "8787"))
+HOST = "0.0.0.0"
+PORT = int(os.getenv("PORT", os.getenv("NOTIFICATION_PORT", "8080")))
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 MAX_BODY_SIZE = 16 * 1024
 RATE_LIMIT_WINDOW = 60
 RATE_LIMIT_MAX_REQUESTS = 10
 request_times = {}
+DIST_DIR = Path(__file__).resolve().parent / "dist"
 
 
 def validate_payload(payload):
@@ -48,11 +52,46 @@ class NotificationHandler(BaseHTTPRequestHandler):
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(encoded)))
-        self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "POST, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        self.send_header("X-Content-Type-Options", "nosniff")
         self.end_headers()
         self.wfile.write(encoded)
+
+    def _send_file(self, file_path, content_type=None):
+        try:
+            content = file_path.read_bytes()
+        except (OSError, ValueError):
+            self._send_json(404, {"error": "Not found"})
+            return
+        self.send_response(200)
+        self.send_header("Content-Type", content_type or mimetypes.guess_type(file_path.name)[0] or "application/octet-stream")
+        self.send_header("Content-Length", str(len(content)))
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.end_headers()
+        self.wfile.write(content)
+
+    def do_GET(self):
+        path = urlparse(self.path).path
+        if path == "/health":
+            self._send_json(200, {"ok": True})
+            return
+        if path == "/env.js":
+            self._send_file(DIST_DIR / "env.js", "application/javascript; charset=utf-8")
+            return
+        if path.startswith("/assets/"):
+            relative_path = Path(unquote(path.removeprefix("/assets/")))
+            asset_path = (DIST_DIR / "assets" / relative_path).resolve()
+            assets_root = (DIST_DIR / "assets").resolve()
+            if assets_root not in asset_path.parents:
+                self._send_json(404, {"error": "Not found"})
+                return
+            self._send_file(asset_path)
+            return
+        if path == "/notify" or path.startswith("/notify/"):
+            self._send_json(405, {"error": "Method not allowed"})
+            return
+        self._send_file(DIST_DIR / "index.html", "text/html; charset=utf-8")
 
     def do_OPTIONS(self):
         self._send_json(204, {})
@@ -94,9 +133,29 @@ class NotificationHandler(BaseHTTPRequestHandler):
         return
 
 
+def write_runtime_config():
+    config = {
+        "supabaseUrl": os.getenv("SUPABASE_URL", ""),
+        "supabaseAnonKey": os.getenv("SUPABASE_ANON_KEY", ""),
+        "notificationUrl": os.getenv("NOTIFICATION_URL", "/notify"),
+    }
+    (DIST_DIR / "env.js").write_text(
+        "window.__APP_CONFIG__ = " + json.dumps(config, ensure_ascii=True) + ";\n",
+        encoding="utf-8",
+    )
+
+
 if __name__ == "__main__":
-    if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
-        raise SystemExit("TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID are required")
+    required = {
+        "SUPABASE_URL": os.getenv("SUPABASE_URL"),
+        "SUPABASE_ANON_KEY": os.getenv("SUPABASE_ANON_KEY"),
+        "TELEGRAM_BOT_TOKEN": TELEGRAM_BOT_TOKEN,
+        "TELEGRAM_CHAT_ID": TELEGRAM_CHAT_ID,
+    }
+    missing = [name for name, value in required.items() if not value]
+    if missing:
+        raise SystemExit(f"Required environment variables are missing: {', '.join(missing)}")
+    write_runtime_config()
     server = ThreadingHTTPServer((HOST, PORT), NotificationHandler)
     print(f"Notification service listening on http://{HOST}:{PORT}")
     try:

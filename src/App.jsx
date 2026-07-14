@@ -79,7 +79,7 @@ function BookingPage() {
       return
     }
     try {
-      const notificationUrl = import.meta.env.VITE_NOTIFICATION_URL || 'http://127.0.0.1:8787/notify'
+      const notificationUrl = window.__APP_CONFIG__?.notificationUrl || '/notify'
       const notificationResponse = await fetch(notificationUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

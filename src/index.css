@@ -13,10 +13,11 @@
 body { margin: 0; min-width: 320px; background: #171918; }
 button, input, select { font: inherit; }
 .field { width: 100%; border: 1px solid rgb(255 255 255 / 0.12); border-radius: 0.75rem; background: rgb(255 255 255 / 0.05); color: white; padding: 0.875rem 1rem; outline: none; transition: border-color 160ms ease, background 160ms ease, box-shadow 160ms ease; }
-.field::placeholder { color: rgb(161 161 170 / 0.7); }
+.field::placeholder, .field-placeholder { color: rgb(161 161 170 / 0.7); }
 .field:focus { border-color: #d2ff3c; background: rgb(255 255 255 / 0.08); box-shadow: 0 0 0 3px rgb(210 255 60 / 0.12); }
 .field-error { border-color: rgb(248 113 113 / 0.75); }
 select.field { appearance: auto; }
+select.field option { background: #232624; color: #ffffff; }
 input[type='date'] { color-scheme: dark; }
 .eyebrow { font-family: 'Space Mono', monospace; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; }
 @keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }

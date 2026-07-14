@@ -148,7 +148,7 @@ function App() {
                 <input className={`field ${errors.date ? 'field-error' : ''}`} id="date" min={today} name="date" onChange={updateField} type="date" value={form.date} />
               </Field>
               <Field error={errors.time} label="Время" htmlFor="time">
-                <select className={`field ${errors.time ? 'field-error' : ''}`} id="time" name="time" onChange={updateField} value={form.time}>
+                <select className={`field ${errors.time ? 'field-error' : ''} ${!form.time ? 'field-placeholder' : ''}`} id="time" name="time" onChange={updateField} value={form.time}>
                   <option value="">Выберите время</option>
                   {times.map((time) => <option key={time}>{time}</option>)}
                 </select>

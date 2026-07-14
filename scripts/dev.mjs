@@ -29,7 +29,8 @@ function findPython() {
 }
 
 function startVite() {
-  return spawn(process.platform === 'win32' ? 'npm.cmd' : 'npm', ['run', 'dev:vite'], { stdio: 'inherit', windowsHide: true, cwd: root })
+  const viteEntry = path.join(root, 'node_modules', 'vite', 'bin', 'vite.js')
+  return spawn(process.execPath, [viteEntry], { stdio: 'inherit', windowsHide: true, cwd: root, env: process.env })
 }
 
 loadDotEnv()

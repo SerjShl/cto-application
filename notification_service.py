@@ -76,8 +76,8 @@ class NotificationHandler(BaseHTTPRequestHandler):
         if path == "/health":
             self._send_json(200, {"ok": True})
             return
-        if path == "/env.js":
-            self._send_file(DIST_DIR / "env.js", "application/javascript; charset=utf-8")
+        if path == "/config.json":
+            self._send_json(200, runtime_config())
             return
         if path.startswith("/assets/"):
             relative_path = Path(unquote(path.removeprefix("/assets/")))
@@ -133,16 +133,12 @@ class NotificationHandler(BaseHTTPRequestHandler):
         return
 
 
-def write_runtime_config():
-    config = {
+def runtime_config():
+    return {
         "supabaseUrl": os.getenv("SUPABASE_URL", ""),
         "supabaseAnonKey": os.getenv("SUPABASE_ANON_KEY", ""),
         "notificationUrl": os.getenv("NOTIFICATION_URL", "/notify"),
     }
-    (DIST_DIR / "env.js").write_text(
-        "window.__APP_CONFIG__ = " + json.dumps(config, ensure_ascii=True) + ";\n",
-        encoding="utf-8",
-    )
 
 
 if __name__ == "__main__":
@@ -155,7 +151,6 @@ if __name__ == "__main__":
     missing = [name for name, value in required.items() if not value]
     if missing:
         raise SystemExit(f"Required environment variables are missing: {', '.join(missing)}")
-    write_runtime_config()
     server = ThreadingHTTPServer((HOST, PORT), NotificationHandler)
     print(f"Notification service listening on http://{HOST}:{PORT}")
     try:

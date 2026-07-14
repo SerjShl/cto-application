@@ -3,7 +3,9 @@ FROM node:22 AS frontend-build
 WORKDIR /app
 COPY package.json pnpm-lock.yaml ./
 RUN corepack enable && pnpm install --frozen-lockfile
-COPY index.html vite.config.js src ./
+COPY index.html vite.config.js ./
+COPY src ./src
+COPY public ./public
 RUN npm run build
 
 FROM python:3.12-slim
